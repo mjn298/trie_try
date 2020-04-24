@@ -3,15 +3,15 @@ package AxoniTrie
 import scala.annotation.tailrec
 
 sealed trait Trie[+A] {
-  def insert[A](k: Int, s: Option[A]): Trie[A] = {
+  def insert[AA >: A](k: Int, s: Option[AA]): Trie[AA] = {
     val path = Trie.toBinary(k)
 
-    def loop(p: Seq[Char], n: Trie[A]): Trie[A] = p match {
+    def loop(p: Seq[Char], n: Trie[AA]): Trie[AA] = p match {
       case h :: t if h == '0' => Branch(loop(t, n.left), n.right, n.value)
       case h :: t if h == '1' => Branch(n.left, loop(t, n.right), n.value)
       case Nil => n match {
-        case Leaf(_) => Leaf(s)
-        case Branch(l, r, v) => Branch(l, r, s)
+        case Branch(l, r, _) => Branch(l, r, s)
+        case _ => Leaf(s)
       }
     }
 
@@ -34,9 +34,10 @@ sealed trait Trie[+A] {
     case Empty => None
   }
 
-  def fold[A, B](z: B)(lf: Option[A] => B)(b: (B, B) => B): B = this match {
+  def fold[AA >: A, B](z: B)(lf: Option[AA] => B)(b: (B, B) => B): B = this match {
     case Leaf(v) => lf(v)
-    case Branch(l, r, v: Option[A]) => b(l.fold(lf(v))(lf)(b), r.fold(lf(v))(lf)(b))
+    case Branch(l, r, v) => b(l.fold(lf(v))(lf)(b), r.fold(lf(v))(lf)(b))
+    case Empty => z
   }
 
   def getNode(key: Int): Option[Trie[A]] = {
@@ -51,7 +52,6 @@ sealed trait Trie[+A] {
 
     loop(path, Some(this))
   }
-
 }
 
 case class Leaf[A](v: Option[A]) extends Trie[A]
@@ -61,7 +61,9 @@ case class Branch[A](l: Trie[A], r: Trie[A], v: Option[A]) extends Trie[A]
 case object Empty extends Trie[Nothing]
 
 object Trie {
-  def toBinary(i: Int): Seq[Char] = i.toBinaryString.reverse
+  def toBinary(i: Int): Seq[Char] = i.toBinaryString.toList.reverse
 
-  def hashVal(s: String): Int = s.hashCode
+  def hashVal(s: Option[String]): Int = s.getOrElse("").hashCode
+
+  def merkleRoot(t: Trie[String]): List[Int] = t.fold(List.empty[Int])(sOpt => List(hashVal(sOpt)))((a, b) => a ++ b)
 }
