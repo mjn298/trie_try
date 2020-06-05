@@ -1,4 +1,4 @@
-package AxoniTrie
+package Trie
 
 import scala.annotation.tailrec
 
@@ -66,4 +66,9 @@ object Trie {
   def hashVal(s: Option[String]): Int = s.getOrElse("").hashCode
 
   def merkleRoot(t: Trie[String]): List[Int] = t.fold(List.empty[Int])(sOpt => List(hashVal(sOpt)))((a, b) => a ++ b)
+
+  def bfs(t: Trie[String]): List[Int] = t match {
+    case Leaf(v) => List(hashVal(v))
+    case Branch(l, r, v) => List(hashVal(v)) ++ bfs(l) ++ bfs(r)
+  }
 }

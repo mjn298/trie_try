@@ -1,4 +1,4 @@
-package AxoniTrie
+package Trie
 
 object Main extends App {
   val b: Trie[String] = Branch[String](Empty, Empty, None)
